@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบบันทึกปริมาณยาสำรอง (Pharmacy Inventory)</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- FontAwesome 6.4 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-gradient: linear-gradient(135deg, #3b82f6, #4f46e5);
+            --secondary-color: #e0e7ff;
+            --accent-color: #f59e0b;
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --font-main: 'Noto Sans Thai', sans-serif;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 10px 25px -5px rgba(79, 70, 229, 0.15);
+            --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 60px;
+            -webkit-font-smoothing: antialiased;
+            line-height: 1.4;
+        }
+
+        h1, h2, h3, h4, h5, .nav-link, .modal-title { font-weight: 600; letter-spacing: -0.02em; }
+
+        .app-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px 0 15px 0;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: -30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .app-header h2 { font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .nav-pills {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-xl);
+            padding: 6px;
+            display: inline-flex;
+            gap: 5px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .nav-pills .nav-link {
+            color: rgba(255,255,255,0.9);
+            border-radius: var(--radius-lg);
+            padding: 10px 24px;
+            font-weight: 500;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+        }
+        
+        .nav-pills .nav-link:hover { background: rgba(255, 255, 255, 0.1); }
+        .nav-pills .nav-link.active {
+            background-color: var(--surface-color);
+            color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+            transform: scale(1.02);
+        }
+
+        .container { position: relative; z-index: 20; margin-top: 40px; }
+
+        .card {
+            border: none;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-md);
+            background: var(--surface-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .card-header { background-color: transparent; border-bottom: 1px solid var(--border-color); padding: 15px 20px; }
+        .card-body { padding: 20px; }
+
+        input.form-control, select.form-control {
+            border-radius: var(--radius-md);
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            background-color: #f8fafc;
+            color: var(--text-main);
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        input.form-control:focus, select.form-control:focus {
+            background-color: var(--surface-color);
+            box-shadow: 0 0 0 4px var(--secondary-color);
+            border-color: var(--primary-color);
+        }
+
+        table.dataTable { font-size: 0.95rem; border-collapse: separate; border-spacing: 0 4px; margin-top: 10px !important; }
+        table.dataTable thead th {
+            background-color: transparent !important;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border-color) !important;
+            text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.05em; padding-bottom: 10px;
+        }
+        table.dataTable tbody tr { box-shadow: var(--shadow-sm); border-radius: var(--radius-md); transition: transform 0.2s, box-shadow 0.2s; }
+        table.dataTable tbody tr:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); background-color: var(--surface-color) !important; }
+        table.dataTable tbody td { border: none; padding: 10px 12px; background: var(--surface-color); vertical-align: middle; }
+        table.dataTable tbody td:first-child { border-top-left-radius: var(--radius-md); border-bottom-left-radius: var(--radius-md); }
+        table.dataTable tbody td:last-child { border-top-right-radius: var(--radius-md); border-bottom-right-radius: var(--radius-md); }
+
+        .badge { padding: 6px 12px; font-weight: 500; letter-spacing: 0.02em; }
+        .table-input { width: 80px; text-align: center; border-radius: 8px; border: 1px solid transparent; padding: 8px; font-weight: 600; background-color: #f1f5f9; transition: all 0.2s; }
+        .table-input:focus { outline: none; background-color: var(--surface-color); border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--secondary-color); }
+        .input-db { background-color: #dcfce7 !important; border-color: #86efac !important; color: #166534; }
+        .input-draft { background-color: #dbeafe !important; border-color: #93c5fd !important; color: #1e40af; }
+
+        .btn-custom { border-radius: var(--radius-lg); padding: 12px 28px; font-weight: 600; letter-spacing: 0.02em; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .btn-primary-custom { background: var(--primary-gradient); color: white; border: none; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25); }
+        .btn-primary-custom:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(79, 70, 229, 0.4); color: white; }
+        .btn-outline-primary { color: white; border-color: rgba(255,255,255,0.5); }
+        .btn-outline-primary:hover { background: rgba(255,255,255,0.1); border-color: white; color: white; }
+        .btn-sm { border-radius: 8px; padding: 6px 10px; margin: 0 2px; }
+
+        .tab-pane.active { animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        #loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(241, 245, 249, 0.95); backdrop-filter: blur(5px);
+            z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.4s;
+        }
+        .loader-spinner {
+            width: 60px; height: 60px; border: 4px solid var(--secondary-color);
+            border-top: 4px solid var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .modal-content { border: none; border-radius: var(--radius-xl); box-shadow: var(--shadow-float); }
+        .modal-header { border-bottom: 1px solid var(--border-color); background-color: #f8fafc; border-top-left-radius: var(--radius-xl); border-top-right-radius: var(--radius-xl); padding: 20px 30px; }
+        .info-box { background-color: #f8fafc; border-left: 4px solid var(--primary-color); border-radius: var(--radius-md); padding: 12px 15px; margin-bottom: 15px; box-shadow: var(--shadow-sm); }
+        .app-footer { text-align: center; padding: 20px 0 10px 0; color: var(--text-muted); font-size: 0.85rem; margin-top: 20px; font-weight: 500; }
+
+        @media (max-width: 768px) {
+            .table-input { width: 65px; } .hide-mobile { display: none; }
+            .card-body { padding: 15px 12px; } .app-header { padding: 15px 0 10px 0; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; }
+            .container { margin-top: 25px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader-overlay">
+        <div class="loader-spinner"></div>
+        <h4 style="color: var(--primary-color); font-weight: 600;">กำลังประมวลผลข้อมูล...</h4>
+        <p class="text-muted small">โปรดรอสักครู่</p>
+    </div>
+
+    <header class="app-header">
+        <div class="container text-center mt-0">
+            <h2 class="mb-4"><i class="fa-solid fa-notes-medical" style="opacity: 0.9;"></i> ระบบคลังยาอัจฉริยะ</h2>
+            <ul class="nav nav-pills justify-content-center" id="mainTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="entry-tab" data-bs-toggle="tab" data-bs-target="#entry-pane" type="button" role="tab"><i class="fa-solid fa-pen-to-square me-1"></i> บันทึกข้อมูล</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab"><i class="fa-solid fa-clock-rotate-left me-1"></i> ประวัติ</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="db-tab" data-bs-toggle="tab" data-bs-target="#db-pane" type="button" role="tab" onclick="checkPinForDb(event)"><i class="fa-solid fa-database me-1"></i> ฐานข้อมูล</button>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="tab-content" id="mainTabContent">
+            
+            <!-- TAB 1 -->
+            <div class="tab-pane fade show active" id="entry-pane" role="tabpanel">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-main"><i class="fa-regular fa-calendar-check text-primary me-2"></i> Step 1: เลือกวันที่สำรวจ</h5>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadData()"><i class="fa-solid fa-sync"></i> ซิงค์ข้อมูล</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 align-items-center justify-content-center">
+                            <div class="col-md-5 col-8">
+                                <input type="date" id="surveyDate" class="form-control form-control-lg text-center" style="font-size: 1.1rem; color: var(--primary-color);">
+                            </div>
+                            <div class="col-md-3 col-4">
+                                <button class="btn btn-primary-custom btn-custom w-100 h-100" onclick="startSurvey()">ถัดไป <i class="fa-solid fa-arrow-right ms-1"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" id="step2-card" style="display: none;">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0 text-main"><i class="fa-solid fa-clipboard-list text-primary me-2"></i> Step 2: บันทึกยอดคงคลัง</h5>
+                            <small class="text-muted d-block mt-1" id="displaySurveyDate">ประจำวันที่: -</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success rounded-pill me-1 mb-1 shadow-sm"><i class="fa-solid fa-cloud-check"></i> ข้อมูลในระบบ</span>
+                            <span class="badge bg-primary rounded-pill shadow-sm" style="background-color: #3b82f6 !important;"><i class="fa-solid fa-pen"></i> ฉบับร่าง</span>
+                        </div>
+                    </div>
+                    <div class="card-body pt-3">
+                        <div class="info-box">
+                            <div class="mb-1 fw-bold text-main" style="font-size: 0.95rem;"><i class="fa-solid fa-circle-info text-primary"></i> สถานะช่องกรอกข้อมูล:</div>
+                            <div class="ms-4 text-muted" style="font-size: 0.85rem;">
+                                <div><span class="d-inline-block rounded-circle me-2" style="width: 10px; height: 10px; background-color: #4ade80;"></span> ช่องสีเขียว = เพื่อนร่วมงานบันทึกไว้แล้ว (แก้ทับได้)</div>
+                                <div class="mt-1"><span class="d-inline-block rounded-circle me-2" style="width: 10px; height: 10px; background-color: #60a5fa;"></span> ช่องสีฟ้า = คุณกำลังพิมพ์ค้างไว้ในเครื่องนี้</div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table id="entryTable" class="table dt-responsive nowrap w-100">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" style="width: 50px;">#</th>
+                                        <th>รายการยา</th>
+                                        <th class="text-center">OPD</th>
+                                        <th class="text-center">IPD</th>
+                                        <th class="text-center">คลัง</th>
+                                        <th class="text-center text-primary">รวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-4 pt-3 border-top">
+                            <button class="btn btn-lg btn-primary-custom btn-custom" onclick="saveSurveyData()"><i class="fa-solid fa-cloud-arrow-up me-2"></i> บันทึกข้อมูลขึ้นระบบ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2 -->
+            <div class="tab-pane fade" id="history-pane" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fa-solid fa-history"></i> ประวัติการบันทึกข้อมูล</h4>
+                    </div>
+                    <div class="card-body">
+                        <table id="historyTable" class="table table-striped dt-responsive nowrap w-100 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>วันที่สำรวจ</th>
+                                    <th>อัปเดตล่าสุด</th>
+                                    <th>จำนวนรายการที่นับ</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3 -->
+            <div class="tab-pane fade" id="db-pane" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fa-solid fa-database"></i> ฐานข้อมูลยา</h4>
+                        <button class="btn btn-primary-custom btn-sm" onclick="openDbModal()"><i class="fa-solid fa-plus"></i> เพิ่มรายการใหม่</button>
+                    </div>
+                    <div class="card-body">
+                        <table id="dbTable" class="table table-bordered dt-responsive nowrap w-100 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>ชื่อยา</th>
+                                    <th>รูปแบบ</th>
+                                    <th>ความแรง</th>
+                                    <th>รหัส HOS</th>
+                                    <th>หน่วย</th>
+                                    <th>สถานะ</th>
+                                    <th>จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <footer class="app-footer">
+            <i class="fa-solid fa-code"></i> พัฒนาโดย ธนพล แสงทับทิม &copy; 2026
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="viewHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary"><i class="fa-solid fa-file-excel"></i> รายงานสำรวจวันที่: <span id="viewHistoryDate"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <table id="reportTable" class="table table-bordered dt-responsive nowrap w-100 align-middle">
+                        <thead>
+                            <tr class="table-primary">
+                                <th>รหัสยา</th>
+                                <th>ชื่อยา</th>
+                                <th>รูปแบบ</th>
+                                <th>ความแรง</th>
+                                <th>รหัส HOS</th>
+                                <th>หน่วย</th>
+                                <th class="text-end">OPD</th>
+                                <th class="text-end">IPD</th>
+                                <th class="text-end">คลัง</th>
+                                <th class="text-end text-danger font-weight-bold">ยอดรวม</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="dbModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dbModalTitle"><i class="fa-solid fa-pills"></i> เพิ่ม/แก้ไข รายการยา</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dbForm">
+                        <input type="hidden" id="dbId">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อยา</label>
+                            <input type="text" class="form-control" id="dbName" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">รูปแบบ (Format)</label>
+                                <input type="text" class="form-control" id="dbFormat">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">ความแรง</label>
+                                <input type="text" class="form-control" id="dbStrength">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label">รหัส HOS</label>
+                                <input type="text" class="form-control" id="dbHosCode">
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label">หน่วยนับ</label>
+                                <input type="text" class="form-control" id="dbUnit">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">สถานะ</label>
+                            <select class="form-select form-control" id="dbStatus">
+                                <option value="มีความแรงนี้ในบัญชี">เปิดใช้งาน (มีความแรงนี้ในบัญชี)</option>
+                                <option value="ยกเลิก">ยกเลิก/ปิดใช้งาน</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary-custom" onclick="saveDbForm()"><i class="fa-solid fa-save"></i> บันทึกข้อมูล</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    
+    <!-- DataTables Export -->
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <script>
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBcVWVNK4zgJsYzn9TqBbtdl-1RKhmeoR-oZujhkGRAYbOl4iVU4giUNDfSz6EBbZH/exec';
+        let appData = { drugs: [], audits: [] };
+        let dataTables = { entry: null, history: null, db: null, report: null };
+        let activeSurveyDate = '';
+        let lastSyncTime = 0;
+
+        // [New] Safe Storage Wrapper: ป้องกัน Error เมื่อ Browser บล็อกคุกกี้/Storage ใน Iframe
+        const SafeStorage = {
+            get: function(type, key) { try { return window[type].getItem(key); } catch(e) { return null; } },
+            set: function(type, key, val) { try { window[type].setItem(key, val); } catch(e) {} },
+            remove: function(type, key) { try { window[type].removeItem(key); } catch(e) {} }
+        };
+
+        function escapeHTML(str) {
+            if (str === null || str === undefined) return '';
+            return str.toString().replace(/[&<>'"]/g, function(tag) {
+                const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+                return charsToReplace[tag] || tag;
+            });
+        }
+
+        function showLoader(text = "กำลังโหลดข้อมูล...") {
+            $('#loader-overlay h4').text(text);
+            $('#loader-overlay').css('display', 'flex');
+            setTimeout(() => $('#loader-overlay').css('opacity', '1'), 10);
+        }
+
+        function hideLoader() {
+            $('#loader-overlay').css('opacity', '0');
+            setTimeout(() => $('#loader-overlay').css('display', 'none'), 400);
+        }
+
+        $(document).ready(function() {
+            try {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                $('#surveyDate').val(`${year}-${month}-${day}`);
+
+                $('#historyTable').on('click', '.btn-view-history', function() { viewHistory($(this).attr('data-date')); });
+                $('#historyTable').on('click', '.btn-edit-history', function() { editHistory($(this).attr('data-date')); });
+                $('#historyTable').on('click', '.btn-delete-history', function() { deleteHistoryPrompt($(this).attr('data-date')); });
+                
+                $('#dbTable').on('click', '.btn-edit-db', function() { editDbItem($(this).attr('data-id')); });
+                $('#dbTable').on('click', '.btn-delete-db', function() { deleteDbItem($(this).attr('data-id')); });
+
+                $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
+                    $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust().responsive.recalc();
+                });
+
+                loadData();
+            } catch (e) {
+                console.error("Initialization Error: ", e);
+                if(typeof Swal !== 'undefined') Swal.fire('ข้อผิดพลาดระบบ', 'การเปิดหน้าเว็บมีปัญหา กรุณารีเฟรชหน้าจอ', 'error');
+                hideLoader();
+            }
+        });
+
+        async function callApi(action, payload = {}) {
+            payload.action = action;
+            return new Promise((resolve, reject) => {
+                try {
+                    if (typeof google !== 'undefined' && google.script && google.script.run) {
+                        const arg = payload.data || payload.date || payload.id || null;
+                        const runner = google.script.run
+                            .withSuccessHandler(res => resolve(res))
+                            .withFailureHandler(err => reject(err));
+                        
+                        // [New] Check ฟังก์ชันใน Code.gs ป้องกัน Error ล่องหน
+                        const fnName = 'api_' + action;
+                        if (typeof runner[fnName] === 'function') {
+                            runner[fnName](arg);
+                        } else {
+                            reject("⚠️ ไม่พบฟังก์ชันบน Server!\nสาเหตุ: คุณอัปเดตโค้ด Code.gs แล้ว แต่ยังไม่ได้กด Deploy เป็น 'New Deployment'");
+                        }
+                    } else {
+                        fetch(WEB_APP_URL, {
+                            method: 'POST',
+                            body: JSON.stringify(payload)
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if(res.status === 'success') resolve(res.data);
+                            else reject(res.message);
+                        })
+                        .catch(err => reject("การเชื่อมต่อล้มเหลว"));
+                    }
+                } catch (e) {
+                    reject(e.toString());
+                }
+            });
+        }
+
+        async function loadData(loadingText = "กำลังซิงค์ข้อมูลจากฐานข้อมูล...", skipIfRecent = false) {
+            const now = Date.now();
+            if (skipIfRecent && (now - lastSyncTime < 5000)) return true;
+
+            showLoader(loadingText);
+            try {
+                const data = await callApi('getInitialData');
+                appData.drugs = data?.drugs || [];
+                appData.audits = data?.audits || [];
+                lastSyncTime = Date.now();
+                
+                renderHistoryTable();
+                if (SafeStorage.get('sessionStorage', 'dbUnlocked')) renderDbTable();
+                if (activeSurveyDate) renderEntryTable();
+                
+                hideLoader();
+                return true;
+            } catch (error) {
+                hideLoader();
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('เกิดข้อผิดพลาดในการโหลดข้อมูล', error.toString(), 'error');
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + error.toString());
+                }
+                return false;
+            }
+        }
+
+        async function startSurvey(forceDate = null) {
+            const dateInput = forceDate || $('#surveyDate').val();
+            if(!dateInput) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่บันทึกข้อมูล', 'warning'); return; }
+
+            const now = Date.now();
+            if (now - lastSyncTime < 5000) {
+                showLoader("กำลังตรวจสอบข้อมูลของเพื่อนร่วมงานในระบบ...");
+                await new Promise(resolve => setTimeout(resolve, 400));
+                hideLoader();
+            } else {
+                const success = await loadData("กำลังตรวจสอบข้อมูลของเพื่อนร่วมงานในระบบ...", false);
+                if (!success) return; 
+            }
+            
+            activeSurveyDate = dateInput;
+            const displayDate = new Date(activeSurveyDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            $('#displaySurveyDate').text(`ประจำวันที่: ${displayDate}`);
+            
+            renderEntryTable();
+            $('#step2-card').fadeIn();
+        }
+
+        function renderEntryTable() {
+            if (dataTables.entry) dataTables.entry.clear().destroy();
+            const tbody = $('#entryTable tbody');
+            tbody.empty();
+
+            const activeDrugs = appData.drugs.filter(d => d.status === 'มีความแรงนี้ในบัญชี');
+            const auditForDate = appData.audits.find(a => a.date === activeSurveyDate);
+            const dbDraft = auditForDate ? auditForDate.dataJSON : {};
+
+            const localDraftKey = `draft_${activeSurveyDate}`;
+            const localDraftStr = SafeStorage.get('localStorage', localDraftKey);
+            const localDraft = localDraftStr ? JSON.parse(localDraftStr) : {};
+
+            activeDrugs.forEach((drug, index) => {
+                const dbData = dbDraft[drug.id] || { opd: '', ipd: '', stock: '' };
+                const locData = localDraft[drug.id];
+                
+                const finalOpd = locData && locData.opd !== "" ? locData.opd : dbData.opd;
+                const finalIpd = locData && locData.ipd !== "" ? locData.ipd : dbData.ipd;
+                const finalStock = locData && locData.stock !== "" ? locData.stock : dbData.stock;
+                
+                const total = (Number(finalOpd||0) + Number(finalIpd||0) + Number(finalStock||0));
+                const finalTotalStr = (finalOpd === "" && finalIpd === "" && finalStock === "") ? "" : total;
+
+                let opdClass = locData && locData.opd !== "" ? 'input-draft' : (dbData.opd !== "" ? 'input-db' : '');
+                let ipdClass = locData && locData.ipd !== "" ? 'input-draft' : (dbData.ipd !== "" ? 'input-db' : '');
+                let stockClass = locData && locData.stock !== "" ? 'input-draft' : (dbData.stock !== "" ? 'input-db' : '');
+
+                tbody.append(`
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td><strong>${escapeHTML(drug.name)}</strong> <span class="text-muted text-sm">(${escapeHTML(drug.strength)})</span><br><small class="text-muted hide-mobile">${escapeHTML(drug.format)} | ${escapeHTML(drug.unit)}</small></td>
+                        <td class="text-center"><input type="number" class="table-input calc-input opd-input ${opdClass}" data-id="${escapeHTML(drug.id)}" data-type="opd" value="${escapeHTML(finalOpd)}"></td>
+                        <td class="text-center"><input type="number" class="table-input calc-input ipd-input ${ipdClass}" data-id="${escapeHTML(drug.id)}" data-type="ipd" value="${escapeHTML(finalIpd)}"></td>
+                        <td class="text-center"><input type="number" class="table-input calc-input stock-input ${stockClass}" data-id="${escapeHTML(drug.id)}" data-type="stock" value="${escapeHTML(finalStock)}"></td>
+                        <td class="text-center bg-light font-weight-bold text-primary total-cell" id="total_${escapeHTML(drug.id)}">${finalTotalStr}</td>
+                    </tr>
+                `);
+            });
+
+            dataTables.entry = $('#entryTable').DataTable({
+                responsive: true, pageLength: 20, lengthMenu: [[20, 30, 50, -1], [20, 30, 50, "All"]],
+                language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/th.json' }, ordering: false
+            });
+
+            $('#entryTable').off('input', '.calc-input').on('input', '.calc-input', function() {
+                const id = $(this).attr('data-id');
+                const type = $(this).attr('data-type');
+                const val = $(this).val();
+
+                $(this).removeClass('input-db').addClass('input-draft');
+                const opd = $(`.opd-input[data-id='${id}']`).val();
+                const ipd = $(`.ipd-input[data-id='${id}']`).val();
+                const stock = $(`.stock-input[data-id='${id}']`).val();
+
+                let total = "";
+                if(opd !== "" || ipd !== "" || stock !== "") total = Number(opd||0) + Number(ipd||0) + Number(stock||0);
+                $(`#total_${id}`).text(total);
+
+                const localDraftKey = `draft_${activeSurveyDate}`;
+                const localDraftStr = SafeStorage.get('localStorage', localDraftKey);
+                let localDraft = localDraftStr ? JSON.parse(localDraftStr) : {};
+                
+                if(!localDraft[id]) localDraft[id] = { opd: "", ipd: "", stock: "", total: "" };
+                localDraft[id][type] = val; localDraft[id].total = total;
+                if(localDraft[id].opd === "" && localDraft[id].ipd === "" && localDraft[id].stock === "") delete localDraft[id];
+
+                SafeStorage.set('localStorage', localDraftKey, JSON.stringify(localDraft));
+            });
+        }
+
+        async function saveSurveyData() {
+            const localDraftKey = `draft_${activeSurveyDate}`;
+            const localDraftStr = SafeStorage.get('localStorage', localDraftKey);
+            const localDraft = localDraftStr ? JSON.parse(localDraftStr) : {};
+
+            if(Object.keys(localDraft).length === 0) { Swal.fire('แจ้งเตือน', 'คุณยังไม่มีข้อมูลใหม่ที่ต้องบันทึก', 'info'); return; }
+
+            Swal.fire({
+                title: 'ยืนยันการบันทึก?', text: "ข้อมูลของคุณจะถูกรวมเข้ากับฐานข้อมูลกลาง", icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#4f46e5', confirmButtonText: 'บันทึกเลย', cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    showLoader('กำลังบันทึกข้อมูล...');
+                    try {
+                        await callApi('saveAudit', { data: { date: activeSurveyDate, dataJSON: localDraft } });
+                        SafeStorage.remove('localStorage', localDraftKey);
+                        await loadData("กำลังอัปเดตข้อมูลล่าสุด...");
+                        Swal.fire({ title: 'สำเร็จ!', text: 'บันทึกข้อมูลเรียบร้อยแล้ว', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
+                            new bootstrap.Tab(document.querySelector('#history-tab')).show();
+                            $('#step2-card').hide(); activeSurveyDate = '';
+                        });
+                    } catch (error) { hideLoader(); Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error, 'error'); }
+                }
+            });
+        }
+
+        function renderHistoryTable() {
+            if (dataTables.history) dataTables.history.clear().destroy();
+            const tbody = $('#historyTable tbody'); tbody.empty();
+
+            appData.audits.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(audit => {
+                const displayDate = new Date(audit.date).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                tbody.append(`
+                    <tr>
+                        <td><strong>${escapeHTML(displayDate)}</strong><br><small class="text-muted hide-mobile">${escapeHTML(audit.date)}</small></td>
+                        <td>${escapeHTML(audit.lastUpdated)}</td>
+                        <td><span class="badge bg-primary rounded-pill">${escapeHTML(audit.itemCount)} รายการ</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-info text-white btn-view-history" data-date="${escapeHTML(audit.date)}" title="ดู"><i class="fa-solid fa-eye"></i></button>
+                            <button class="btn btn-sm btn-warning btn-edit-history" data-date="${escapeHTML(audit.date)}" title="แก้ไข"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-danger btn-delete-history" data-date="${escapeHTML(audit.date)}" title="ลบ"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `);
+            });
+            dataTables.history = $('#historyTable').DataTable({ responsive: true, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/th.json' }, order: [[0, 'desc']] });
+        }
+
+        function viewHistory(dateStr) {
+            const audit = appData.audits.find(a => a.date === dateStr);
+            if(!audit) return;
+
+            $('#viewHistoryDate').text(new Date(dateStr).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }));
+            if (dataTables.report) dataTables.report.clear().destroy();
+            
+            const tbody = $('#reportTableBody'); tbody.empty();
+            Object.keys(audit.dataJSON).forEach(drugId => {
+                const rec = audit.dataJSON[drugId];
+                if(rec && (rec.opd !== "" || rec.ipd !== "" || rec.stock !== "")) {
+                    const drug = appData.drugs.find(d => d.id === drugId) || { id: drugId, name: '<span class="text-danger">(ถูกลบ)</span>', format: '-', strength: '-', hosCode: '-', unit: '-' };
+                    const displayDrugName = appData.drugs.find(d => d.id === drugId) ? escapeHTML(drug.name) : drug.name;
+                    tbody.append(`
+                        <tr>
+                            <td>${escapeHTML(drug.id)}</td><td>${displayDrugName}</td><td>${escapeHTML(drug.format)}</td><td>${escapeHTML(drug.strength)}</td>
+                            <td>${escapeHTML(drug.hosCode)}</td><td>${escapeHTML(drug.unit)}</td><td class="text-end">${escapeHTML(rec.opd) || '-'}</td>
+                            <td class="text-end">${escapeHTML(rec.ipd) || '-'}</td><td class="text-end">${escapeHTML(rec.stock) || '-'}</td><td class="text-end font-weight-bold text-danger">${escapeHTML(rec.total) || '-'}</td>
+                        </tr>
+                    `);
+                }
+            });
+
+            dataTables.report = $('#reportTable').DataTable({
+                responsive: true, dom: '<"d-flex justify-content-between align-items-center mb-3"Bf>rt<"d-flex justify-content-between mt-3"ip>',
+                buttons: [{ extend: 'excelHtml5', text: '<i class="fa-solid fa-file-excel"></i> Export Excel', className: 'btn btn-success btn-sm rounded-pill', title: `รายงานยา_${dateStr}`, exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] } }],
+                columnDefs: [{ targets: 0, visible: false }], language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/th.json' }, paging: false 
+            });
+            $('#viewHistoryModal').modal('show');
+        }
+
+        function editHistory(dateStr) {
+            new bootstrap.Tab(document.querySelector('#entry-tab')).show();
+            $('#surveyDate').val(dateStr);
+            startSurvey(dateStr);
+            Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'โหลดข้อมูลเพื่อแก้ไขแล้ว', showConfirmButton: false, timer: 3000 });
+        }
+
+        function deleteHistoryPrompt(dateStr) {
+            Swal.fire({
+                title: 'ใส่รหัสผ่านเพื่อลบ', input: 'password', text: "กรุณาใส่รหัสผ่านเพื่อยืนยันการลบ",
+                showCancelButton: true, confirmButtonText: 'ลบข้อมูล', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#ef4444'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    if (result.value === '1234') { 
+                        showLoader('กำลังลบข้อมูล...');
+                        try { await callApi('deleteAudit', { date: dateStr }); await loadData(); Swal.fire('ลบสำเร็จ!', '', 'success'); } 
+                        catch(e) { hideLoader(); Swal.fire('Error', e.toString(), 'error'); }
+                    } else { Swal.fire('รหัสผ่านไม่ถูกต้อง', '', 'error'); }
+                }
+            });
+        }
+
+        function checkPinForDb(e) {
+            if(SafeStorage.get('sessionStorage', 'dbUnlocked')) return;
+            e.preventDefault(); e.stopPropagation();
+            Swal.fire({
+                title: '🔒 ฐานข้อมูล', text: "กรุณาใส่ PIN", input: 'password', showCancelButton: true, confirmButtonText: 'ตกลง', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#4f46e5'
+            }).then((result) => {
+                if (result.isConfirmed && result.value === '1234') {
+                    SafeStorage.set('sessionStorage', 'dbUnlocked', 'true');
+                    renderDbTable(); new bootstrap.Tab(document.querySelector('#db-tab')).show();
+                } else if (result.isConfirmed) { Swal.fire('รหัสผ่านไม่ถูกต้อง', '', 'error'); }
+            });
+        }
+
+        function renderDbTable() {
+            if (dataTables.db) dataTables.db.clear().destroy();
+            const tbody = $('#dbTable tbody'); tbody.empty();
+
+            if (!SafeStorage.get('sessionStorage', 'dbUnlocked')) {
+                tbody.append(`<tr><td colspan="8" class="text-center text-muted py-5"><i class="fa-solid fa-lock fa-3x mb-3"></i><h5>ข้อมูลถูกล็อค</h5></td></tr>`);
+                return;
+            }
+
+            appData.drugs.forEach(drug => {
+                const statusBadge = drug.status === 'มีความแรงนี้ในบัญชี' ? '<span class="badge bg-success rounded-pill">ใช้งาน</span>' : '<span class="badge bg-secondary rounded-pill">ยกเลิก</span>';
+                tbody.append(`
+                    <tr>
+                        <td>${escapeHTML(drug.id)}</td><td><strong>${escapeHTML(drug.name)}</strong></td><td>${escapeHTML(drug.format)}</td>
+                        <td>${escapeHTML(drug.strength)}</td><td>${escapeHTML(drug.hosCode)}</td><td>${escapeHTML(drug.unit)}</td><td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning btn-edit-db" data-id="${escapeHTML(drug.id)}"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-danger btn-delete-db" data-id="${escapeHTML(drug.id)}"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `);
+            });
+            dataTables.db = $('#dbTable').DataTable({ responsive: true, language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/th.json' } });
+        }
+
+        function openDbModal() { $('#dbForm')[0].reset(); $('#dbId').val(''); $('#dbModalTitle').html('<i class="fa-solid fa-pills"></i> เพิ่มรายการยาใหม่'); $('#dbModal').modal('show'); }
+
+        function editDbItem(id) {
+            const drug = appData.drugs.find(d => d.id === id); if(!drug) return;
+            $('#dbId').val(drug.id); $('#dbName').val(drug.name); $('#dbFormat').val(drug.format); $('#dbStrength').val(drug.strength);
+            $('#dbHosCode').val(drug.hosCode); $('#dbUnit').val(drug.unit); $('#dbStatus').val(drug.status);
+            $('#dbModalTitle').html('<i class="fa-solid fa-pen"></i> แก้ไขข้อมูลยา'); $('#dbModal').modal('show');
+        }
+
+        async function saveDbForm() {
+            if(!$('#dbName').val().trim()) { Swal.fire('แจ้งเตือน', 'กรุณากรอกชื่อยา', 'warning'); return; }
+            const payload = { id: $('#dbId').val(), name: $('#dbName').val().trim(), format: $('#dbFormat').val(), strength: $('#dbStrength').val(), hosCode: $('#dbHosCode').val(), unit: $('#dbUnit').val(), status: $('#dbStatus').val() };
+            $('#dbModal').modal('hide'); showLoader('กำลังบันทึก...');
+            try { await callApi('saveDbItem', { data: payload }); await loadData(); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'บันทึกสำเร็จ', showConfirmButton: false, timer: 1500 }); } 
+            catch(e) { hideLoader(); Swal.fire('Error', e.toString(), 'error'); }
+        }
+
+        function deleteDbItem(id) {
+            Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' })
+            .then(async (result) => {
+                if (result.isConfirmed) { showLoader('กำลังลบ...'); try { await callApi('deleteDbItem', { id: id }); await loadData(); Swal.fire('ลบสำเร็จ!', '', 'success'); } catch(e) { hideLoader(); Swal.fire('Error', e.toString(), 'error'); } }
+            });
+        }
+    </script>
+    
+    <!-- [New] ตัวปิด Loader อัตโนมัติ ป้องกันหน้าจอค้างตลอดกาล หากเกิดข้อผิดพลาดในการโหลด -->
+    <script>
+        setTimeout(function() {
+            var loader = document.getElementById('loader-overlay');
+            if (loader && loader.style.display !== 'none' && loader.style.opacity !== '0') {
+                loader.style.opacity = '0';
+                setTimeout(function(){ loader.style.display = 'none'; }, 400);
+                
+                var errorMsg = "⚠️ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ (โหลดนานเกินไป)\n\nวิธีแก้ไข:\n1. หากคุณเพิ่งแก้โค้ด Code.gs ให้กดปุ่ม [การทำให้ใช้งานได้/Deploy] > [รายการใหม่/New Deployment] เสมอ\n2. อินเทอร์เน็ตหรือเครือข่ายบล็อกการทำงาน";
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('โหลดข้อมูลล้มเหลว', errorMsg, 'warning');
+                } else {
+                    alert(errorMsg);
+                }
+            }
+        }, 12000); // หาก 12 วินาทีโหลดไม่เสร็จ ให้เด้งเตือนทันที
+    </script>
+</body>
+</html>
